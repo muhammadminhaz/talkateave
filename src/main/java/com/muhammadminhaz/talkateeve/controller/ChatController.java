@@ -47,7 +47,7 @@ public class ChatController {
         // Add to vector store
         chatService.addKnowledge(text, metadata);
 
-        return ResponseEntity.ok("Text added to RAG successfully");
+        return ResponseEntity.ok("Information added successfully");
     }
 
     public Map extractProductInfo(String text) {
