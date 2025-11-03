@@ -10,7 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
@@ -35,22 +35,15 @@ public class AuthController {
 
     @Operation(summary = "Login user and get JWT token")
     @PostMapping("/login")
-    public ResponseEntity<Void> login(@RequestBody LoginRequestDTO loginRequestDTO, HttpServletResponse response) {
-        Optional<String> tokenOptional = authService.authenticate(loginRequestDTO);
-        if (tokenOptional.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    public ResponseEntity<?> login(@RequestBody LoginRequestDTO loginRequestDTO, HttpServletResponse response) {
+        boolean success = authService.authenticate(loginRequestDTO, response);
+
+        if (!success) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Invalid email or password"));
         }
 
-        String token = tokenOptional.get();
-
-        Cookie cookie = new Cookie("token", token);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(false);
-        cookie.setPath("/");
-        cookie.setMaxAge(3600);
-        response.addCookie(cookie);
-
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(Map.of("message", "Login successful"));
     }
 
 
@@ -68,7 +61,7 @@ public class AuthController {
         Cookie cookie = new Cookie("token", null);
         cookie.setHttpOnly(true);
         cookie.setPath("/");
-        cookie.setMaxAge(0); // delete cookie
+        cookie.setMaxAge(0);
         response.addCookie(cookie);
 
         return ResponseEntity.ok().build();

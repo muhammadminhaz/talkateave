@@ -3,6 +3,8 @@ package com.muhammadminhaz.talkateeve.service;
 import com.muhammadminhaz.talkateeve.dto.LoginRequestDTO;
 import com.muhammadminhaz.talkateeve.util.JwtUtil;
 import io.jsonwebtoken.JwtException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -47,12 +49,24 @@ public class AuthService {
     }
 
     // Authenticate
-    public Optional<String> authenticate(LoginRequestDTO loginRequestDTO) {
+    public boolean authenticate(LoginRequestDTO loginRequestDTO, HttpServletResponse response) {
         return userService
                 .findByEmail(loginRequestDTO.getEmail())
                 .filter(u -> passwordEncoder.matches(loginRequestDTO.getPassword(), u.getPassword()))
-                .map(u -> jwtUtil.generateToken(u.getEmail()));
+                .map(u -> {
+                    String token = jwtUtil.generateToken(u.getEmail());
+                    Cookie cookie = new Cookie("token", token);
+                    cookie.setHttpOnly(true);
+                    cookie.setSecure(false); // true if using HTTPS
+                    cookie.setPath("/");     // available for entire app
+                    cookie.setMaxAge(24 * 60 * 60); // 1 day
+
+                    response.addCookie(cookie);
+                    return true;
+                })
+                .orElse(false);
     }
+
 
     // Validate JWT
     public boolean validateToken(String token) {
