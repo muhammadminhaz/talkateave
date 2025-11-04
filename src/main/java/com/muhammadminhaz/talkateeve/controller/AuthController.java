@@ -49,11 +49,13 @@ public class AuthController {
 
     @Operation(summary = "Validate JWT Token")
     @GetMapping("/validate")
-    public ResponseEntity<Void> validateToken(@CookieValue(value = "token", required = false) String token) {
+    public ResponseEntity<UserDTO> validateToken(@CookieValue(value = "token", required = false) String token) {
         if (token == null || !authService.validateToken(token)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        return ResponseEntity.ok().build();
+        User user = authService.getUserFromToken(token); // extract user info from token
+        UserDTO userDto = new UserDTO(user.getId().toString(), user.getUsername(), user.getEmail());
+        return ResponseEntity.ok(userDto);
     }
 
     @PostMapping("/logout")
@@ -65,16 +67,5 @@ public class AuthController {
         response.addCookie(cookie);
 
         return ResponseEntity.ok().build();
-    }
-
-    @GetMapping("/me")
-    public ResponseEntity<UserDTO> getCurrentUser(@CookieValue(value = "token", required = false) String token) {
-        if (token == null || !authService.validateToken(token)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        User user = authService.getUserFromToken(token); // extract user info from token
-        UserDTO userDto = new UserDTO(user.getId().toString(), user.getUsername(), user.getEmail());
-        return ResponseEntity.ok(userDto);
     }
 }
