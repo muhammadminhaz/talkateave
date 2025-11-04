@@ -1,5 +1,6 @@
 package com.muhammadminhaz.talkateeve.util;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -43,5 +44,16 @@ public class JwtUtil {
         } catch (JwtException e) {
             throw new JwtException("Invalid JWT Token");
         }
+    }
+
+    public String getEmailFromToken(String token) {
+        Claims claims = Jwts
+                .parser()
+                .verifyWith((SecretKey) key)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+
+        return claims.getSubject();
     }
 }

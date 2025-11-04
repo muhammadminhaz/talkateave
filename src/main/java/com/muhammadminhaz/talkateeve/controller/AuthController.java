@@ -66,4 +66,15 @@ public class AuthController {
 
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserDTO> getCurrentUser(@CookieValue(value = "token", required = false) String token) {
+        if (token == null || !authService.validateToken(token)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        User user = authService.getUserFromToken(token); // extract user info from token
+        UserDTO userDto = new UserDTO(user.getId().toString(), user.getUsername(), user.getEmail());
+        return ResponseEntity.ok(userDto);
+    }
 }

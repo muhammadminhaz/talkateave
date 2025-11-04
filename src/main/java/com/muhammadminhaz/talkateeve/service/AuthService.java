@@ -3,6 +3,7 @@ package com.muhammadminhaz.talkateeve.service;
 import com.muhammadminhaz.talkateeve.dto.LoginRequestDTO;
 import com.muhammadminhaz.talkateeve.util.JwtUtil;
 import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -15,6 +16,7 @@ import com.muhammadminhaz.talkateeve.util.JwtUtil;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import javax.crypto.SecretKey;
 import java.util.Optional;
 
 @Service
@@ -77,5 +79,16 @@ public class AuthService {
             return false;
         }
     }
+
+    public User getUserFromToken(String token) {
+        try {
+            String email = jwtUtil.getEmailFromToken(token);
+            return userService.findByEmail(email)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        } catch (JwtException | IllegalArgumentException e) {
+            return null;
+        }
+    }
+
 }
 
