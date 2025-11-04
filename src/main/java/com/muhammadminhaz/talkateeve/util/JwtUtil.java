@@ -47,13 +47,19 @@ public class JwtUtil {
     }
 
     public String getEmailFromToken(String token) {
-        Claims claims = Jwts
-                .parser()
-                .verifyWith((SecretKey) key)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+        try {
+            Claims claims = Jwts
+                    .parser()
+                    .verifyWith((SecretKey) key)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
 
-        return claims.getSubject();
+            return claims.getSubject();
+        } catch (SignatureException e) {
+            throw new JwtException("Invalid JWT Signature");
+        } catch (JwtException e) {
+            throw new JwtException("Invalid JWT Token");
+        }
     }
 }
