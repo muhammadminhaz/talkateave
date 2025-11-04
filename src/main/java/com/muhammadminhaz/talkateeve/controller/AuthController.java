@@ -47,8 +47,8 @@ public class AuthController {
     }
 
 
-    @Operation(summary = "Validate JWT Token")
-    @GetMapping("/validate")
+    @Operation(summary = "Validate JWT Token and get user")
+    @GetMapping("/me")
     public ResponseEntity<UserDTO> validateToken(@CookieValue(value = "token", required = false) String token) {
         if (token == null || !authService.validateToken(token)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
