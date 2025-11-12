@@ -452,4 +452,37 @@ public class BotDocumentService {
                 ))
                 .toList();
     }
+
+    public List<Map<String, Object>> listBotFiles(UUID botId) {
+        String sql = """
+        SELECT filename, COUNT(*) AS chunk_count
+        FROM bot_document
+        WHERE bot_id = ?::uuid
+        GROUP BY filename
+        ORDER BY filename
+    """;
+
+        return jdbcTemplate.query(sql, (rs, rowNum) -> Map.of(
+                "filename", rs.getString("filename"),
+                "chunkCount", rs.getInt("chunk_count")
+        ), botId.toString());
+    }
+
+    @Transactional
+    public void deleteFile(UUID botId, String filename) {
+        String findSql = "SELECT id FROM bot_document WHERE bot_id = ?::uuid AND filename = ?";
+        List<String> ids = jdbcTemplate.queryForList(findSql, String.class, botId.toString(), filename);
+
+        if (ids.isEmpty()) return;
+
+        String deleteSql = "DELETE FROM bot_document WHERE bot_id = ?::uuid AND filename = ?";
+        jdbcTemplate.update(deleteSql, botId.toString(), filename);
+
+        vectorStore.delete(ids);
+
+        invalidateBotCache(botId.toString());
+
+        log.info("Deleted file {} with {} chunks for bot {}", filename, ids.size(), botId);
+    }
+
 }
