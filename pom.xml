@@ -27,8 +27,8 @@
         <url/>
     </scm>
     <properties>
-        <java.version>17</java.version>
-        <spring-ai.version>1.0.3</spring-ai.version>
+        <java.version>25</java.version>
+        <spring-ai.version>1.1.0-RC1</spring-ai.version>
     </properties>
     <dependencies>
         <dependency>
@@ -127,6 +127,39 @@
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
             <version>2.8.13</version>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-tika-document-reader</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.lettuce</groupId>
+            <artifactId>lettuce-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-model-google-genai</artifactId>
+            <version>1.1.0-RC1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-model-google-genai-embedding</artifactId>
+            <version>1.1.0-M1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-google-genai-embedding</artifactId>
+            <version>1.1.0-RC1</version>
+        </dependency>
+
     </dependencies>
     <dependencyManagement>
         <dependencies>

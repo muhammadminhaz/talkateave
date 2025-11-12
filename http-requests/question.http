@@ -1,0 +1,11 @@
+### GET request to example server
+POST http://localhost:8080/api/bots/24591cd1-2ece-439f-b843-6235fc6b6f5d/ask
+
+{
+  "question": "Who is Americas president?"
+}
+
+###
+GET https://generativelanguage.googleapis.com/v1beta/models?key=AIzaSyBq6EjVe_MfTkoS1jnpoZC7Kjrryn0fKOE
+
+###
