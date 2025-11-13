@@ -424,7 +424,7 @@ public class BotDocumentService {
         }
     }
 
-    private void invalidateBotCache(String botId) {
+    void invalidateBotCache(String botId) {
         Set<String> keys = redisTemplate.keys(CACHE_PREFIX + botId + ":*");
         if (keys != null && !keys.isEmpty()) {
             redisTemplate.delete(keys);

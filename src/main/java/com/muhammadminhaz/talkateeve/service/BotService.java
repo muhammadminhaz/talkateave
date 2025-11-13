@@ -2,21 +2,22 @@ package com.muhammadminhaz.talkateeve.service;
 
 import com.muhammadminhaz.talkateeve.dto.BotRequest;
 import com.muhammadminhaz.talkateeve.dto.BotResponse;
+import com.muhammadminhaz.talkateeve.dto.ChatMessageDTO;
 import com.muhammadminhaz.talkateeve.model.Bot;
 import com.muhammadminhaz.talkateeve.model.User;
 import com.muhammadminhaz.talkateeve.repository.BotRepository;
 import com.muhammadminhaz.talkateeve.repository.UserRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.document.Document;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class BotService {
 
@@ -24,15 +25,18 @@ public class BotService {
     private final BotRepository botRepository;
     private final UserRepository userRepository;
     private final BotDocumentService botDocumentService;
+    private final JdbcTemplate jdbcTemplate;
 
     public BotService(GoogleGenAiChatModel chatModel,
                       BotRepository botRepository,
                       UserRepository userRepository,
-                      BotDocumentService botDocumentService) {
+                      BotDocumentService botDocumentService,
+                      JdbcTemplate jdbcTemplate) {
         this.chatModel = chatModel;
         this.botRepository = botRepository;
         this.userRepository = userRepository;
         this.botDocumentService = botDocumentService;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     /**
@@ -51,7 +55,6 @@ public class BotService {
 
         Bot savedBot = botRepository.save(bot);
 
-        // Train bot with uploaded files
         if (files != null && !files.isEmpty()) {
             botDocumentService.uploadDocuments(savedBot, files);
         }
@@ -66,7 +69,6 @@ public class BotService {
         Bot bot = botRepository.findById(botId)
                 .orElseThrow(() -> new RuntimeException("Bot not found"));
 
-        // Ownership check
         if (!bot.getUser().getId().equals(userId)) {
             throw new RuntimeException("Unauthorized to update this bot");
         }
@@ -124,46 +126,54 @@ public class BotService {
     }
 
     /**
-     * Improved askBot with error handling and context quality check
+     * Ask bot with conversation history (for chat widget)
      */
-    public String askBot(UUID botId, String question) {
+    public String askBotWithHistory(UUID botId, String question, List<ChatMessageDTO> history) {
         Bot bot = botRepository.findById(botId)
                 .orElseThrow(() -> new RuntimeException("Bot not found"));
 
         try {
-            // Retrieve relevant documents
-            List<Document> docs = botDocumentService.querySimilar(
-                    botId.toString(), question, 5
+            // Retrieve relevant documents from RAG
+            List<org.springframework.ai.document.Document> docs = botDocumentService.querySimilar(
+                    botId.toString(), question, 3
             );
 
-            if (docs.isEmpty()) {
-                return "I don't have enough information in my knowledge base to answer that question. Please upload relevant documents or rephrase your question.";
-            }
-
-            // Build context with relevance indicators
             String context = docs.stream()
-                    .map(doc -> {
-                        String source = (String) doc.getMetadata().get("filename");
-                        return String.format("[Source: %s]\n%s", source, doc.getText());
-                    })
-                    .collect(Collectors.joining("\n\n---\n\n"));
+                    .map(org.springframework.ai.document.Document::getText)
+                    .collect(Collectors.joining("\n\n"));
 
             String instructions = String.join("\n", bot.getInstructions());
 
-            String prompt = """
+            // Build conversation history
+            StringBuilder conversationContext = new StringBuilder();
+            if (history != null && !history.isEmpty()) {
+                conversationContext.append("Previous conversation:\n");
+                for (ChatMessageDTO msg : history) {
+                    String role = "user".equals(msg.getRole()) ? "User" : "Assistant";
+                    conversationContext.append(String.format("%s: %s\n", role, msg.getContent()));
+                }
+                conversationContext.append("\n");
+            }
+
+            String prompt = String.format("""
                 You are a helpful assistant. Follow these instructions:
                 %s
                 
-                Answer the question using ONLY the context below. If the answer isn't in the context, 
-                say "I don't have that information in my knowledge base."
-                
-                Context:
                 %s
                 
-                Question: %s
+                Use the following knowledge base to answer questions:
+                %s
                 
-                Answer:
-                """.formatted(instructions, context, question);
+                Current question: %s
+                
+                Provide a helpful, contextual answer based on the conversation history and knowledge base.
+                If the answer isn't in the knowledge base, say so politely.
+                """,
+                    instructions,
+                    conversationContext.toString(),
+                    context.isEmpty() ? "No specific context available." : context,
+                    question
+            );
 
             return chatModel.call(new Prompt(prompt))
                     .getResult()
@@ -171,9 +181,64 @@ public class BotService {
                     .getText();
 
         } catch (Exception e) {
-          //  log.error("Error during bot query: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to process your question: " + e.getMessage());
+            log.error("Error during bot query: {}", e.getMessage(), e);
+            return "I'm sorry, I encountered an error processing your request. Please try again.";
         }
+    }
+
+    /**
+     * Ask bot without history (backward compatibility)
+     */
+    public String askBot(UUID botId, String question) {
+        return askBotWithHistory(botId, question, new ArrayList<>());
+    }
+
+    /**
+     * Get bot documents for display/editing
+     */
+    public List<Map<String, Object>> getBotDocuments(UUID botId, UUID userId) {
+        Bot bot = botRepository.findById(botId)
+                .orElseThrow(() -> new RuntimeException("Bot not found"));
+
+        if (!bot.getUser().getId().equals(userId)) {
+            throw new RuntimeException("Unauthorized");
+        }
+
+        String sql = """
+            SELECT DISTINCT filename, COUNT(*) as chunk_count
+            FROM bot_document
+            WHERE bot_id = ?::uuid
+            GROUP BY filename
+            ORDER BY filename
+            """;
+
+        return jdbcTemplate.query(sql,
+                (rs, rowNum) -> Map.of(
+                        "filename", rs.getString("filename"),
+                        "chunkCount", rs.getInt("chunk_count")
+                ),
+                botId.toString()
+        );
+    }
+
+    /**
+     * Delete document by filename
+     */
+    public void deleteDocument(UUID botId, String filename, UUID userId) {
+        Bot bot = botRepository.findById(botId)
+                .orElseThrow(() -> new RuntimeException("Bot not found"));
+
+        if (!bot.getUser().getId().equals(userId)) {
+            throw new RuntimeException("Unauthorized");
+        }
+
+        String sql = "DELETE FROM bot_document WHERE bot_id = ?::uuid AND filename = ?";
+        int deleted = jdbcTemplate.update(sql, botId.toString(), filename);
+
+        log.info("Deleted {} chunks for file {} from bot {}", deleted, filename, botId);
+
+        // Invalidate cache
+        botDocumentService.invalidateBotCache(botId.toString());
     }
 
     private String generateSlug(String name) {
@@ -182,9 +247,5 @@ public class BotService {
                 .replaceAll("\\s+", "-")
                 .replaceAll("-+", "-")
                 .replaceAll("^-|-$", "");
-    }
-
-    public List<Map<String, Object>> getDocumentList(UUID botId) {
-        return botDocumentService.listBotFiles(botId);
     }
 }
