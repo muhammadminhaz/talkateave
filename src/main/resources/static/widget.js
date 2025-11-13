@@ -29,40 +29,40 @@
     // Create widget HTML
     function createWidget() {
         const widgetContainer = document.createElement('div');
-        widgetContainer.id = 'talkateeve-widget';
-        widgetContainer.className = `talkateeve-widget ${position}`;
+        widgetContainer.id = 'talkateave-widget';
+        widgetContainer.className = `talkateave-widget ${position}`;
 
         widgetContainer.innerHTML = `
             <style>
                 /* Widget Container */
-                .talkateeve-widget {
+                .talkateave-widget {
                     position: fixed;
                     z-index: 9999;
                     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                 }
                 
-                .talkateeve-widget.bottom-right {
+                .talkateave-widget.bottom-right {
                     bottom: 20px;
                     right: 20px;
                 }
                 
-                .talkateeve-widget.bottom-left {
+                .talkateave-widget.bottom-left {
                     bottom: 20px;
                     left: 20px;
                 }
                 
-                .talkateeve-widget.top-right {
+                .talkateave-widget.top-right {
                     top: 20px;
                     right: 20px;
                 }
                 
-                .talkateeve-widget.top-left {
+                .talkateave-widget.top-left {
                     top: 20px;
                     left: 20px;
                 }
 
                 /* Chat Button */
-                #talkateeve-chat-button {
+                #talkateave-chat-button {
                     width: 60px;
                     height: 60px;
                     border-radius: 50%;
@@ -76,19 +76,19 @@
                     transition: transform 0.2s, box-shadow 0.2s;
                 }
                 
-                #talkateeve-chat-button:hover {
+                #talkateave-chat-button:hover {
                     transform: scale(1.1);
                     box-shadow: 0 6px 16px rgba(0,0,0,0.2);
                 }
                 
-                #talkateeve-chat-button svg {
+                #talkateave-chat-button svg {
                     width: 28px;
                     height: 28px;
                     fill: white;
                 }
 
                 /* Chat Window */
-                #talkateeve-chat-window {
+                #talkateave-chat-window {
                     position: absolute;
                     bottom: 80px;
                     right: 0;
@@ -104,7 +104,7 @@
                     overflow: hidden;
                 }
                 
-                #talkateeve-chat-window.open {
+                #talkateave-chat-window.open {
                     display: flex;
                     animation: slideUp 0.3s ease-out;
                 }
@@ -121,7 +121,7 @@
                 }
 
                 /* Chat Header */
-                #talkateeve-chat-header {
+                #talkateave-chat-header {
                     background: ${primaryColor};
                     color: white;
                     padding: 16px;
@@ -130,13 +130,13 @@
                     justify-content: space-between;
                 }
                 
-                #talkateeve-chat-header h3 {
+                #talkateave-chat-header h3 {
                     margin: 0;
                     font-size: 16px;
                     font-weight: 600;
                 }
                 
-                #talkateeve-close-button {
+                #talkateave-close-button {
                     background: transparent;
                     border: none;
                     color: white;
@@ -148,24 +148,24 @@
                 }
 
                 /* Messages Container */
-                #talkateeve-messages {
+                #talkateave-messages {
                     flex: 1;
                     overflow-y: auto;
                     padding: 16px;
                     background: #f9fafb;
                 }
                 
-                .talkateeve-message {
+                .talkateave-message {
                     margin-bottom: 12px;
                     display: flex;
                     gap: 8px;
                 }
                 
-                .talkateeve-message.user {
+                .talkateave-message.user {
                     flex-direction: row-reverse;
                 }
                 
-                .talkateeve-message-content {
+                .talkateave-message-content {
                     max-width: 75%;
                     padding: 10px 14px;
                     border-radius: 12px;
@@ -174,18 +174,18 @@
                     word-wrap: break-word;
                 }
                 
-                .talkateeve-message.bot .talkateeve-message-content {
+                .talkateave-message.bot .talkateave-message-content {
                     background: white;
                     color: #1f2937;
                     border: 1px solid #e5e7eb;
                 }
                 
-                .talkateeve-message.user .talkateeve-message-content {
+                .talkateave-message.user .talkateave-message-content {
                     background: ${primaryColor};
                     color: white;
                 }
                 
-                .talkateeve-avatar {
+                .talkateave-avatar {
                     width: 32px;
                     height: 32px;
                     border-radius: 50%;
@@ -196,18 +196,18 @@
                     flex-shrink: 0;
                 }
                 
-                .talkateeve-message.bot .talkateeve-avatar {
+                .talkateave-message.bot .talkateave-avatar {
                     background: ${primaryColor}20;
                 }
                 
-                .talkateeve-message.user .talkateeve-avatar {
+                .talkateave-message.user .talkateave-avatar {
                     background: ${primaryColor};
                     color: white;
                     font-size: 14px;
                 }
 
                 /* Typing Indicator */
-                .talkateeve-typing {
+                .talkateave-typing {
                     display: flex;
                     gap: 4px;
                     padding: 10px 14px;
@@ -217,7 +217,7 @@
                     border: 1px solid #e5e7eb;
                 }
                 
-                .talkateeve-typing span {
+                .talkateave-typing span {
                     width: 8px;
                     height: 8px;
                     border-radius: 50%;
@@ -225,11 +225,11 @@
                     animation: typing 1.4s infinite;
                 }
                 
-                .talkateeve-typing span:nth-child(2) {
+                .talkateave-typing span:nth-child(2) {
                     animation-delay: 0.2s;
                 }
                 
-                .talkateeve-typing span:nth-child(3) {
+                .talkateave-typing span:nth-child(3) {
                     animation-delay: 0.4s;
                 }
                 
@@ -245,7 +245,7 @@
                 }
 
                 /* Input Container */
-                #talkateeve-input-container {
+                #talkateave-input-container {
                     padding: 12px 16px;
                     background: white;
                     border-top: 1px solid #e5e7eb;
@@ -253,7 +253,7 @@
                     gap: 8px;
                 }
                 
-                #talkateeve-input {
+                #talkateave-input {
                     flex: 1;
                     padding: 10px 14px;
                     border: 1px solid #e5e7eb;
@@ -263,11 +263,11 @@
                     font-family: inherit;
                 }
                 
-                #talkateeve-input:focus {
+                #talkateave-input:focus {
                     border-color: ${primaryColor};
                 }
                 
-                #talkateeve-send-button {
+                #talkateave-send-button {
                     width: 40px;
                     height: 40px;
                     border-radius: 50%;
@@ -280,23 +280,23 @@
                     transition: opacity 0.2s;
                 }
                 
-                #talkateeve-send-button:hover:not(:disabled) {
+                #talkateave-send-button:hover:not(:disabled) {
                     opacity: 0.9;
                 }
                 
-                #talkateeve-send-button:disabled {
+                #talkateave-send-button:disabled {
                     opacity: 0.5;
                     cursor: not-allowed;
                 }
                 
-                #talkateeve-send-button svg {
+                #talkateave-send-button svg {
                     width: 20px;
                     height: 20px;
                     fill: white;
                 }
 
                 /* Powered By */
-                .talkateeve-powered {
+                .talkateave-powered {
                     text-align: center;
                     padding: 8px;
                     font-size: 11px;
@@ -304,14 +304,14 @@
                     border-top: 1px solid #f3f4f6;
                 }
                 
-                .talkateeve-powered a {
+                .talkateave-powered a {
                     color: ${primaryColor};
                     text-decoration: none;
                 }
 
                 /* Mobile Responsive */
                 @media (max-width: 480px) {
-                    #talkateeve-chat-window {
+                    #talkateave-chat-window {
                         width: calc(100vw - 40px);
                         height: calc(100vh - 120px);
                     }
@@ -319,17 +319,17 @@
             </style>
 
             <!-- Chat Button -->
-            <button id="talkateeve-chat-button" aria-label="Open chat">
+            <button id="talkateave-chat-button" aria-label="Open chat">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                     <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
                 </svg>
             </button>
 
             <!-- Chat Window -->
-            <div id="talkateeve-chat-window">
-                <div id="talkateeve-chat-header">
+            <div id="talkateave-chat-window">
+                <div id="talkateave-chat-header">
                     <h3>🤖 Chat Assistant</h3>
-                    <button id="talkateeve-close-button" aria-label="Close chat">
+                    <button id="talkateave-close-button" aria-label="Close chat">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <line x1="18" y1="6" x2="6" y2="18"></line>
                             <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -337,31 +337,31 @@
                     </button>
                 </div>
 
-                <div id="talkateeve-messages">
-                    <div class="talkateeve-message bot">
-                        <div class="talkateeve-avatar">🤖</div>
-                        <div class="talkateeve-message-content">
+                <div id="talkateave-messages">
+                    <div class="talkateave-message bot">
+                        <div class="talkateave-avatar">🤖</div>
+                        <div class="talkateave-message-content">
                             Hi! I'm here to help. Ask me anything!
                         </div>
                     </div>
                 </div>
 
-                <div id="talkateeve-input-container">
+                <div id="talkateave-input-container">
                     <input 
                         type="text" 
-                        id="talkateeve-input" 
+                        id="talkateave-input" 
                         placeholder="Type your message..."
                         aria-label="Chat message"
                     />
-                    <button id="talkateeve-send-button" aria-label="Send message">
+                    <button id="talkateave-send-button" aria-label="Send message">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                             <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
                         </svg>
                     </button>
                 </div>
 
-                <div class="talkateeve-powered">
-                    Powered by <a href="https://yourdomain.com" target="_blank">TalkAtEve</a>
+                <div class="talkateave-powered">
+                    Powered by <a href="https://yourdomain.com" target="_blank">Talkateave</a>
                 </div>
             </div>
         `;
@@ -372,13 +372,13 @@
 
     // Add message to chat
     function addMessage(content, isUser = false) {
-        const messagesContainer = document.getElementById('talkateeve-messages');
+        const messagesContainer = document.getElementById('talkateave-messages');
         const messageDiv = document.createElement('div');
-        messageDiv.className = `talkateeve-message ${isUser ? 'user' : 'bot'}`;
+        messageDiv.className = `talkateave-message ${isUser ? 'user' : 'bot'}`;
 
         messageDiv.innerHTML = `
-            <div class="talkateeve-avatar">${isUser ? '👤' : '🤖'}</div>
-            <div class="talkateeve-message-content">${escapeHtml(content)}</div>
+            <div class="talkateave-avatar">${isUser ? '👤' : '🤖'}</div>
+            <div class="talkateave-message-content">${escapeHtml(content)}</div>
         `;
 
         messagesContainer.appendChild(messageDiv);
@@ -398,14 +398,14 @@
 
     // Show typing indicator
     function showTypingIndicator() {
-        const messagesContainer = document.getElementById('talkateeve-messages');
+        const messagesContainer = document.getElementById('talkateave-messages');
         const typingDiv = document.createElement('div');
-        typingDiv.className = 'talkateeve-message bot';
-        typingDiv.id = 'talkateeve-typing-indicator';
+        typingDiv.className = 'talkateave-message bot';
+        typingDiv.id = 'talkateave-typing-indicator';
 
         typingDiv.innerHTML = `
-            <div class="talkateeve-avatar">🤖</div>
-            <div class="talkateeve-typing">
+            <div class="talkateave-avatar">🤖</div>
+            <div class="talkateave-typing">
                 <span></span>
                 <span></span>
                 <span></span>
@@ -418,7 +418,7 @@
 
     // Remove typing indicator
     function removeTypingIndicator() {
-        const typingIndicator = document.getElementById('talkateeve-typing-indicator');
+        const typingIndicator = document.getElementById('talkateave-typing-indicator');
         if (typingIndicator) {
             typingIndicator.remove();
         }
@@ -429,8 +429,8 @@
         if (!message.trim() || isLoading) return;
 
         isLoading = true;
-        const sendButton = document.getElementById('talkateeve-send-button');
-        const input = document.getElementById('talkateeve-input');
+        const sendButton = document.getElementById('talkateave-send-button');
+        const input = document.getElementById('talkateave-input');
 
         sendButton.disabled = true;
         input.disabled = true;
@@ -480,11 +480,11 @@
 
     // Attach event listeners
     function attachEventListeners() {
-        const chatButton = document.getElementById('talkateeve-chat-button');
-        const closeButton = document.getElementById('talkateeve-close-button');
-        const chatWindow = document.getElementById('talkateeve-chat-window');
-        const input = document.getElementById('talkateeve-input');
-        const sendButton = document.getElementById('talkateeve-send-button');
+        const chatButton = document.getElementById('talkateave-chat-button');
+        const closeButton = document.getElementById('talkateave-close-button');
+        const chatWindow = document.getElementById('talkateave-chat-window');
+        const input = document.getElementById('talkateave-input');
+        const sendButton = document.getElementById('talkateave-send-button');
 
         // Toggle chat window
         chatButton.addEventListener('click', () => {

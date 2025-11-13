@@ -18,11 +18,6 @@ public class WebConfig {
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
                         .allowCredentials(true);
-//                registry.addMapping("/api/bots/widget.js")
-//                        .allowedOrigins("*")
-//                        .allowedMethods("GET", "OPTIONS")
-//                        .allowedHeaders("*")
-//                        .maxAge(3600);
             }
         };
     }
