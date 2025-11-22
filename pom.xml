@@ -9,7 +9,7 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.muhammadminhaz</groupId>
-    <artifactId>talkateave</artifactId>
+    <artifactId>talkateeve</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>talkateeve</name>
     <description>talkateeve</description>
