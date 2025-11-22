@@ -1,0 +1,31 @@
+### Register a new user
+POST http://localhost:8080/auth/register
+Content-Type: application/json
+
+{
+  "username": "minhaz",
+  "email": "minhaz@example.com",
+  "password": "1234",
+  "confirmPassword": "1234"
+}
+
+###
+
+### Login user
+POST http://localhost:8080/auth/login
+Content-Type: application/json
+
+{
+  "email": "mminhazurrahman0@gmail.com",
+  "password": "1234"
+}
+###> {% client.global.set("token", response.body.token) %}
+###
+
+### Validate token
+# Replace <TOKEN> with the JWT you get from login response
+GET http://localhost:8080/auth/validate
+
+###
+GET http://localhost:8080/auth/me
+

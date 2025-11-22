@@ -1,0 +1,24 @@
+### GET request to example server
+POST http://localhost:8080/api/bots/24591cd1-2ece-439f-b843-6235fc6b6f5d/ask
+
+{
+  "question": "Who is Americas president?"
+}
+
+###
+GET https://generativelanguage.googleapis.com/v1beta/models?key=GEMINI_API_KEY
+
+###
+GET http://localhost:8080/api/bots/{botId}/documents
+
+###
+POST http://localhost:8080/api/bots/widget/ask?botId=botId
+Content-Type: application/json
+
+{
+  "message": "What is your purpose?",
+  "history": [
+    {
+    }
+  ]
+}
