@@ -4,10 +4,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class TalkateeveApplication {
+public class TalkateaveApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(TalkateeveApplication.class, args);
+        SpringApplication.run(TalkateaveApplication.class, args);
     }
 
 }
