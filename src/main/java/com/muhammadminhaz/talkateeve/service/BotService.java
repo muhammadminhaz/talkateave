@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,17 +28,19 @@ public class BotService {
     private final UserRepository userRepository;
     private final BotDocumentService botDocumentService;
     private final JdbcTemplate jdbcTemplate;
+    private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
     public BotService(GoogleGenAiChatModel chatModel,
                       BotRepository botRepository,
                       UserRepository userRepository,
                       BotDocumentService botDocumentService,
-                      JdbcTemplate jdbcTemplate) {
+                      JdbcTemplate jdbcTemplate, NamedParameterJdbcTemplate namedParameterJdbcTemplate) {
         this.chatModel = chatModel;
         this.botRepository = botRepository;
         this.userRepository = userRepository;
         this.botDocumentService = botDocumentService;
         this.jdbcTemplate = jdbcTemplate;
+        this.namedParameterJdbcTemplate = namedParameterJdbcTemplate;
     }
 
     /**
@@ -122,22 +126,28 @@ public class BotService {
             throw new RuntimeException("Unauthorized to delete this bot");
         }
 
-        String deleteRagDocuments = """
-        DELETE FROM rag_documents
-        WHERE id IN (
-            SELECT id FROM bot_document WHERE bot_id = ?::uuid
+        String sql = """
+        WITH deleted_docs AS (
+            DELETE FROM bot_document
+            WHERE bot_id = :botId
+            RETURNING id
+        ),
+        deleted_rag AS (
+            DELETE FROM rag_documents
+            WHERE id IN (SELECT id FROM deleted_docs)
+        ),
+        deleted_instructions AS (
+            DELETE FROM bot_instructions
+            WHERE bot_id = :botId
         )
+        DELETE FROM bot
+        WHERE id = :botId
     """;
-        jdbcTemplate.update(deleteRagDocuments, botId.toString());
 
-        String deleteBotDocuments = "DELETE FROM bot_document WHERE bot_id = ?::uuid";
-        jdbcTemplate.update(deleteBotDocuments, botId.toString());
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("botId", botId);
 
-        String deleteInstructions = "DELETE FROM bot_instructions WHERE bot_id = ?::uuid";
-        jdbcTemplate.update(deleteInstructions, botId.toString());
-
-        String deleteBot = "DELETE FROM bot WHERE id = ?::uuid";
-        jdbcTemplate.update(deleteBot, botId.toString());
+        namedParameterJdbcTemplate.update(sql, params);
     }
 
     /**
