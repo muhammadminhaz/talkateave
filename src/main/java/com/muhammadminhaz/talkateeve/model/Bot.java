@@ -14,6 +14,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 public class Bot {
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -22,14 +23,17 @@ public class Bot {
     private String description;
     private String slug;
 
-    @ElementCollection
+    // Instructions stored as ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "bot_instructions", joinColumns = @JoinColumn(name = "bot_id"))
+    @Column(name = "instruction")
     private List<String> instructions = new ArrayList<>();
 
     @ManyToOne
-    @JoinColumn(name = "user_id") // optional: rename column
+    @JoinColumn(name = "user_id")
     private User user;
 
-    @OneToMany(mappedBy = "bot", cascade = CascadeType.ALL)
+    // Cascade all operations to documents and enable orphanRemoval
+    @OneToMany(mappedBy = "bot", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<BotDocument> documents = new ArrayList<>();
 }
-

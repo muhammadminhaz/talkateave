@@ -27,7 +27,7 @@ public class BotDocument {
     @Column(name = "embedding", columnDefinition = "vector(768)")
     private PGvector embedding;
 
-    @ManyToOne(fetch = FetchType.LAZY) // lazy fetch for performance
+    @ManyToOne
     @JoinColumn(name = "bot_id", nullable = false)
     private Bot bot;
 }
