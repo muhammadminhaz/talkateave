@@ -17,6 +17,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -51,25 +53,25 @@ public class AuthService {
     }
 
     // Authenticate
-    public boolean authenticate(LoginRequestDTO loginRequestDTO, HttpServletResponse response) {
+    public Map<String, Object> authenticate(LoginRequestDTO loginRequestDTO, HttpServletResponse response) {
         return userService
                 .findByEmail(loginRequestDTO.getEmail())
                 .filter(u -> passwordEncoder.matches(loginRequestDTO.getPassword(), u.getPassword()))
                 .map(u -> {
                     String token = jwtUtil.generateToken(u.getEmail());
-                    Cookie cookie = new Cookie("token", token);
-                    cookie.setHttpOnly(true);
-                    cookie.setSecure(true);
-                    cookie.setPath("/");
-                    cookie.setMaxAge(24 * 60 * 60);
+
+                    // Set HttpOnly cookie for API security
                     response.setHeader("Set-Cookie",
                             String.format("token=%s; Path=/; Max-Age=86400; HttpOnly; Secure; SameSite=None", token));
 
-
-                    response.addCookie(cookie);
-                    return true;
+                    // Return token in response body for frontend storage
+                    Map<String, Object> result = new HashMap<>();
+                    result.put("success", true);
+                    result.put("token", token);
+                    result.put("message", "Login successful");
+                    return result;
                 })
-                .orElse(false);
+                .orElse(Map.of("success", false, "message", "Invalid credentials"));
     }
 
 

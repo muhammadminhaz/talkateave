@@ -38,14 +38,12 @@ public class AuthController {
     @Operation(summary = "Login user and get JWT token")
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequestDTO loginRequestDTO, HttpServletResponse response) {
-        boolean success = authService.authenticate(loginRequestDTO, response);
+        Map<String, Object> result = authService.authenticate(loginRequestDTO, response);
 
-        if (!success) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("message", "Invalid email or password"));
+        if ((Boolean) result.get("success")) {
+            return ResponseEntity.ok(result);
         }
-
-        return ResponseEntity.ok(Map.of("message", "Login successful"));
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(result);
     }
 
 
@@ -63,11 +61,9 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(HttpServletResponse response) {
-        Cookie cookie = new Cookie("token", null);
-        cookie.setHttpOnly(true);
-        cookie.setPath("/");
-        cookie.setMaxAge(0);
-        response.addCookie(cookie);
+        // Clear the HttpOnly cookie with the same attributes used when setting it
+        response.setHeader("Set-Cookie",
+                "token=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=None");
 
         return ResponseEntity.ok().build();
     }
