@@ -11,10 +11,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -39,7 +39,7 @@ class AuthServiceTests {
     private AuthService authService;
 
     @Test
-    void authenticate_ShouldReturnTrue_WhenCredentialsAreValid() {
+    void authenticate_ShouldReturnTokenMap_WhenCredentialsAreValid() {
         // Arrange
         LoginRequestDTO request = new LoginRequestDTO();
         request.setEmail("test@example.com");
@@ -51,21 +51,26 @@ class AuthServiceTests {
 
         when(userService.findByEmail("test@example.com"))
                 .thenReturn(Optional.of(user));
-
         when(passwordEncoder.matches("password123", "encodedPass"))
                 .thenReturn(true);
-
         when(jwtUtil.generateToken("test@example.com"))
                 .thenReturn("fake_jwt_token");
 
-        boolean result = authService.authenticate(request, response);
+        // Act
+        Map<String, Object> result = authService.authenticate(request, response);
 
-        assertTrue(result);
-        verify(response, times(1)).addCookie(any(Cookie.class));
+        // Assert
+        assertNotNull(result);
+        assertTrue((Boolean) result.get("success"));
+        assertEquals("fake_jwt_token", result.get("token"));
+        assertEquals("Login successful", result.get("message"));
+
+        // Verify header is set
+        verify(response, times(1)).setHeader(eq("Set-Cookie"), contains("token=fake_jwt_token"));
     }
 
     @Test
-    void authenticate_ShouldReturnFalse_WhenUserNotFound() {
+    void authenticate_ShouldReturnFailureMap_WhenUserNotFound() {
         LoginRequestDTO request = new LoginRequestDTO();
         request.setEmail("missing@example.com");
         request.setPassword("pass");
@@ -73,14 +78,17 @@ class AuthServiceTests {
         when(userService.findByEmail("missing@example.com"))
                 .thenReturn(Optional.empty());
 
-        boolean result = authService.authenticate(request, response);
+        Map<String, Object> result = authService.authenticate(request, response);
 
-        assertFalse(result);
-        verify(response, never()).addCookie(any());
+        assertNotNull(result);
+        assertFalse((Boolean) result.get("success"));
+        assertEquals("Invalid credentials", result.get("message"));
+
+        verify(response, never()).setHeader(anyString(), anyString());
     }
 
     @Test
-    void authenticate_ShouldReturnFalse_WhenPasswordDoesNotMatch() {
+    void authenticate_ShouldReturnFailureMap_WhenPasswordDoesNotMatch() {
         LoginRequestDTO request = new LoginRequestDTO();
         request.setEmail("test@example.com");
         request.setPassword("wrong");
@@ -91,14 +99,15 @@ class AuthServiceTests {
 
         when(userService.findByEmail("test@example.com"))
                 .thenReturn(Optional.of(user));
-
         when(passwordEncoder.matches("wrong", "encodedPass"))
                 .thenReturn(false);
 
-        boolean result = authService.authenticate(request, response);
+        Map<String, Object> result = authService.authenticate(request, response);
 
-        assertFalse(result);
-        verify(response, never()).addCookie(any());
+        assertNotNull(result);
+        assertFalse((Boolean) result.get("success"));
+        assertEquals("Invalid credentials", result.get("message"));
+
+        verify(response, never()).setHeader(anyString(), anyString());
     }
 }
-
