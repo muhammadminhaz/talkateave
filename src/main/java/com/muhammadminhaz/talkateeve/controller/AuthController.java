@@ -6,12 +6,14 @@ import com.muhammadminhaz.talkateeve.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
@@ -50,6 +52,7 @@ public class AuthController {
     @Operation(summary = "Validate JWT Token and get user")
     @GetMapping("/me")
     public ResponseEntity<UserDTO> validateToken(@CookieValue(value = "token", required = false) String token) {
+        log.info("Token {}", token);
         if (token == null || !authService.validateToken(token)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }

@@ -59,7 +59,7 @@ public class AuthService {
                     String token = jwtUtil.generateToken(u.getEmail());
                     Cookie cookie = new Cookie("token", token);
                     cookie.setHttpOnly(true);
-                    cookie.setSecure(false); // true if using HTTPS
+                    cookie.setSecure(true);
                     cookie.setPath("/");     // available for entire app
                     cookie.setMaxAge(24 * 60 * 60); // 1 day
 
