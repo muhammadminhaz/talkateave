@@ -122,7 +122,25 @@ public class BotService {
             throw new RuntimeException("Unauthorized to delete this bot");
         }
 
-        botRepository.delete(bot);
+        String deleteRagDocuments = """
+        DELETE FROM rag_documents
+        WHERE id IN (
+            SELECT id FROM bot_document WHERE bot_id = ?::uuid
+        )
+    """;
+        jdbcTemplate.update(deleteRagDocuments, botId.toString());
+
+        // 2️⃣ Delete bot documents
+        String deleteBotDocuments = "DELETE FROM bot_document WHERE bot_id = ?::uuid";
+        jdbcTemplate.update(deleteBotDocuments, botId.toString());
+
+        // 3️⃣ Delete instructions
+        String deleteInstructions = "DELETE FROM bot_instructions WHERE bot_id = ?::uuid";
+        jdbcTemplate.update(deleteInstructions, botId.toString());
+
+        // 4️⃣ Delete the bot itself
+        String deleteBot = "DELETE FROM bot WHERE id = ?::uuid";
+        jdbcTemplate.update(deleteBot, botId.toString());
     }
 
     /**
