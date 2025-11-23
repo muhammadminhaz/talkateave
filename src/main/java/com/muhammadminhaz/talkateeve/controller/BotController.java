@@ -6,6 +6,7 @@ import com.muhammadminhaz.talkateeve.dto.ChatMessageDTO;
 import com.muhammadminhaz.talkateeve.dto.ChatRequestDTO;
 import com.muhammadminhaz.talkateeve.service.AuthService;
 import com.muhammadminhaz.talkateeve.service.BotService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
@@ -18,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/bots")
 public class BotController {
@@ -48,9 +50,10 @@ public class BotController {
                     question,
                     history
             );
-
+            log.info("answer: {}", answer);
             return ResponseEntity.ok(answer);
         } catch (Exception e) {
+            log.info("exception: {}", e.getMessage());
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Sorry, I encountered an error. Please try again.");
