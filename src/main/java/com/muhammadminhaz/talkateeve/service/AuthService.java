@@ -60,8 +60,11 @@ public class AuthService {
                     Cookie cookie = new Cookie("token", token);
                     cookie.setHttpOnly(true);
                     cookie.setSecure(true);
-                    cookie.setPath("/");     // available for entire app
-                    cookie.setMaxAge(24 * 60 * 60); // 1 day
+                    cookie.setPath("/");
+                    cookie.setMaxAge(24 * 60 * 60);
+                    response.setHeader("Set-Cookie",
+                            String.format("token=%s; Path=/; Max-Age=86400; HttpOnly; Secure; SameSite=None", token));
+
 
                     response.addCookie(cookie);
                     return true;
