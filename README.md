@@ -37,6 +37,35 @@ That's it! Your AI chatbot is now live on your website. 🎉
 
 ---
 
+## 📸 Screenshots
+
+### Landing Page
+![Landing Page](./screenshots/landing.png)
+*Clean and modern landing page showcasing Talkateave's core features*
+
+### Dashboard
+![Dashboard](./screenshots/dashboard.png)
+*User dashboard for analytics of your bots*
+
+### Bot Details
+![Bot Details](./screenshots/create-bot.png)
+*Intuitive interface for creating and configuring new chatbots*
+
+### Bot List
+![Document Upload](./screenshots/bots.png)
+*See your list of bots*
+
+### Chat Widget
+![Chat Widget](./screenshots/chat-widget.png)
+
+*Embedded chat widget seamlessly integrated into any website*
+
+### Chat Interface
+![Chat Interface](./screenshots/chat-interface.png)
+*Clean, responsive chat interface with RAG-powered responses*
+
+---
+
 ## 🛠️ Tech Stack
 
 ### Frontend
@@ -213,7 +242,6 @@ Content-Type: application/json
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-
 ---
 
 ## 🙏 Acknowledgments
@@ -234,5 +262,5 @@ Have questions? Reach out!
 
 ---
 
-<p align="center">Made with ❤️ by the Muhammad Minhaz</p>
+<p align="center">Made with ❤️ by Muhammad Minhaz</p>
 <p align="center">⭐ Star it on GitHub if you find this project useful!</p>
