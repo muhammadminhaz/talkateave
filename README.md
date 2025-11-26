@@ -60,10 +60,6 @@ That's it! Your AI chatbot is now live on your website. 🎉
 
 *Embedded chat widget seamlessly integrated into any website*
 
-### Chat Interface
-![Chat Interface](./screenshots/chat-widget.png)
-*Clean, responsive chat interface with RAG-powered responses*
-
 ---
 
 ## 🛠️ Tech Stack
