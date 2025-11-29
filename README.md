@@ -23,7 +23,7 @@ Talkateave is a powerful platform that enables users to create custom AI chatbot
 
 ### For Users
 
-1. **Sign Up** at [talkateave.com](https://talkateave-fe.vercel.app)
+1. **Sign Up** at [talkateave.com](https://talkateave.vercel.app)
 2. **Create a Bot** and give it a name
 3. **Add Instructions** to define how your bot should behave
 4. **Upload Files** to train your bot on your knowledge base
