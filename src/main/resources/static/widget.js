@@ -361,7 +361,7 @@
                 </div>
 
                 <div class="talkateave-powered">
-                    Powered by <a href="https://yourdomain.com" target="_blank">Talkateave</a>
+                    Powered by <a href="${apiUrl}" target="_blank">Talkateave</a>
                 </div>
             </div>
         `;
