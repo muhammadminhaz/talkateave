@@ -75,6 +75,7 @@ services:
       # Baked into every embed snippet BotResponse hands the dashboard, so it has
       # to be the public FQDN, not the container host.
       WIDGET_BASE_URL: https://talkateave.158.178.146.95.sslip.io
+      REINDEX_EMBEDDINGS: ${REINDEX_EMBEDDINGS:-false}
     expose:
       - "8080"
     healthcheck:
