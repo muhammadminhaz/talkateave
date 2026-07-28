@@ -1,0 +1,84 @@
+# Coolify-managed deployment, direct from git.
+#
+# Coolify owns routing + TLS (via SERVICE_FQDN_BACKEND_8080) and injects every
+# secret from its UI, so there are no Traefik labels, no external `coolify`
+# network and no `env_file` here. Volumes are named volumes Coolify manages.
+#
+# Postgres and Redis run here, not on Neon/Upstash, so the backend reaches them
+# over the compose network on their service names.
+#
+# Coolify resource: Build Pack = Docker Compose, file = /docker-compose.yml,
+# branch = master. Set these in the Coolify UI (Environment Variables):
+#   DB_USERNAME, DB_PASSWORD, REDIS_PASSWORD, JWT_SECRET, GEMINI_API_KEY
+
+services:
+  db:
+    # pgvector, not plain postgres: VectorStoreConfig builds a PgVectorStore
+    # with initializeSchema(true), which needs the vector extension present.
+    image: pgvector/pgvector:pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: talkateave
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d talkateave"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep -q PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+  backend:
+    build:
+      context: .
+    restart: unless-stopped
+    environment:
+      # https:// scheme => Coolify routes on the TLS entrypoint and issues a
+      # Let's Encrypt cert for this host. Drop the scheme and it may serve http.
+      SERVICE_FQDN_BACKEND_8080: https://talkateave.158.178.146.95.sslip.io
+
+      # SPRING_* names override application.properties via relaxed binding,
+      # so the committed Neon/Upstash defaults never reach production.
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/talkateave
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SPRING_DATA_REDIS_SSL_ENABLED: "false"
+
+      JWT_SECRET: ${JWT_SECRET}
+
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      SPRING_AI_GOOGLE_GENAI_API_KEY: ${GEMINI_API_KEY}
+      SPRING_AI_GOOGLE_GENAI_EMBEDDING_API_KEY: ${GEMINI_API_KEY}
+
+      SPRING_JPA_SHOW_SQL: "false"
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
+    expose:
+      - "8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  db_data:
+  redis_data:
