@@ -30,7 +30,7 @@ Talkateave is a powerful platform that enables users to create custom AI chatbot
 5. **Copy the Script Tag** and paste it into your website:
 
 ```html
-<script src="https://talkateave.onrender.com/widget.js" data-bot-id="your-bot-id"></script>
+<script src="{baseUrl}/widget.js" data-bot-id="your-bot-id"></script>
 ```
 
 That's it! Your AI chatbot is now live on your website. 🎉
