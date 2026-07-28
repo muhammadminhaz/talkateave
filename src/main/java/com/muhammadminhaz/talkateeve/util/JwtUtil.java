@@ -40,9 +40,9 @@ public class JwtUtil {
                     .build()
                     .parseSignedClaims(token);
         } catch (SignatureException e) {
-            throw new JwtException("Invalid JWT Signature");
+            throw new JwtException("Invalid JWT Signature", e);
         } catch (JwtException e) {
-            throw new JwtException("Invalid JWT Token");
+            throw new JwtException("Invalid JWT Token", e);
         }
     }
 
@@ -57,9 +57,11 @@ public class JwtUtil {
 
             return claims.getSubject();
         } catch (SignatureException e) {
-            throw new JwtException("Invalid JWT Signature");
+            // Chain the cause: without it, a JWT_SECRET mismatch after a redeploy is
+            // indistinguishable in the logs from an ordinary expired token.
+            throw new JwtException("Invalid JWT Signature", e);
         } catch (JwtException e) {
-            throw new JwtException("Invalid JWT Token");
+            throw new JwtException("Invalid JWT Token", e);
         }
     }
 }

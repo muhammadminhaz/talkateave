@@ -1,26 +1,20 @@
 package com.muhammadminhaz.talkateeve.service;
 
 import com.muhammadminhaz.talkateeve.dto.LoginRequestDTO;
-import com.muhammadminhaz.talkateeve.util.JwtUtil;
-import io.jsonwebtoken.JwtException;
-import io.jsonwebtoken.Jwts;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-
-import com.muhammadminhaz.talkateeve.dto.LoginRequestDTO;
 import com.muhammadminhaz.talkateeve.dto.RegisterRequestDTO;
 import com.muhammadminhaz.talkateeve.model.User;
 import com.muhammadminhaz.talkateeve.util.JwtUtil;
+import io.jsonwebtoken.JwtException;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.SecretKey;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+@Slf4j
 @Service
 public class AuthService {
 
@@ -49,10 +43,11 @@ public class AuthService {
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
-        return Optional.of(userService.save(user));
+        User saved = userService.save(user);
+        log.info("Registered user id={} email={}", saved.getId(), saved.getEmail());
+        return Optional.of(saved);
     }
 
-    // Authenticate
     public Map<String, Object> authenticate(LoginRequestDTO loginRequestDTO, HttpServletResponse response) {
         return userService
                 .findByEmail(loginRequestDTO.getEmail())
@@ -60,20 +55,23 @@ public class AuthService {
                 .map(u -> {
                     String token = jwtUtil.generateToken(u.getEmail());
 
-                    // Set HttpOnly cookie for API security
+                    // HttpOnly cookie so the browser never exposes the token to JS
                     response.setHeader("Set-Cookie",
                             String.format("token=%s; Path=/; Max-Age=86400; HttpOnly; Secure; SameSite=None", token));
 
-                    // Return token in response body for frontend storage
+                    log.info("Login successful for email={}", u.getEmail());
+
                     Map<String, Object> result = new HashMap<>();
                     result.put("success", true);
                     result.put("token", token);
                     result.put("message", "Login successful");
                     return result;
                 })
-                .orElse(Map.of("success", false, "message", "Invalid credentials"));
+                .orElseGet(() -> {
+                    log.warn("Login failed for email={}: invalid credentials", loginRequestDTO.getEmail());
+                    return Map.of("success", false, "message", "Invalid credentials");
+                });
     }
-
 
     // Validate JWT
     public boolean validateToken(String token) {
@@ -81,6 +79,9 @@ public class AuthService {
             jwtUtil.validateToken(token);
             return true;
         } catch (Exception e) {
+            // WARN, not ERROR: an expired token is normal traffic on every request.
+            // Never log the token itself.
+            log.warn("Token validation failed: {}", e.getMessage(), e);
             return false;
         }
     }
@@ -89,11 +90,11 @@ public class AuthService {
         try {
             String email = jwtUtil.getEmailFromToken(token);
             return userService.findByEmail(email)
-                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                    .orElseThrow(() -> new IllegalArgumentException("User not found for email " + email));
         } catch (JwtException | IllegalArgumentException e) {
+            log.warn("Could not resolve user from token: {}", e.getMessage(), e);
             return null;
         }
     }
 
 }
-

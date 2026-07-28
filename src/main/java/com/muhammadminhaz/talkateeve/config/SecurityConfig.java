@@ -16,6 +16,9 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**", "/api/**").permitAll()
+                        // Liveness/readiness probes only. Everything else under
+                        // /actuator stays behind anyRequest().authenticated().
+                        .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
                         .anyRequest().authenticated()
                 );
         return http.build();

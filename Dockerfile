@@ -17,7 +17,10 @@ RUN ./mvnw package -DskipTests -B
 FROM eclipse-temurin:25-jre AS runner
 WORKDIR /app
 
-RUN groupadd --system --gid 1001 spring && \
+# curl is only here for the compose healthcheck; the temurin jre image has none.
+RUN apt-get update && apt-get install -y --no-install-recommends curl && \
+    rm -rf /var/lib/apt/lists/* && \
+    groupadd --system --gid 1001 spring && \
     useradd --system --uid 1001 --gid spring spring
 
 COPY --from=builder /app/target/*.jar app.jar

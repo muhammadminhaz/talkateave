@@ -6,6 +6,7 @@ import com.muhammadminhaz.talkateeve.dto.ChatMessageDTO;
 import com.muhammadminhaz.talkateeve.dto.ChatRequestDTO;
 import com.muhammadminhaz.talkateeve.service.AuthService;
 import com.muhammadminhaz.talkateeve.service.BotService;
+import com.muhammadminhaz.talkateeve.validation.FileUploadValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -14,6 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
@@ -26,10 +28,13 @@ public class BotController {
 
     private final BotService botService;
     private final AuthService authService;
+    private final FileUploadValidator fileUploadValidator;
 
-    public BotController(BotService botService, AuthService authService) {
+    public BotController(BotService botService, AuthService authService,
+                         FileUploadValidator fileUploadValidator) {
         this.botService = botService;
         this.authService = authService;
+        this.fileUploadValidator = fileUploadValidator;
     }
 
     /**
@@ -41,23 +46,22 @@ public class BotController {
             @RequestParam String botId,
             @RequestBody ChatRequestDTO chatRequest
     ) {
-        try {
-            String question = chatRequest.getMessage();
-            List<ChatMessageDTO> history = chatRequest.getHistory();
+        // No try/catch: GlobalExceptionHandler logs the stack trace with an errorId and
+        // returns a 5xx. The old catch logged at INFO with no stack trace, which is why
+        // a months-long outage left no trace in the logs.
+        String question = chatRequest.getMessage();
+        List<ChatMessageDTO> history = chatRequest.getHistory();
 
-            String answer = botService.askBotWithHistory(
-                    UUID.fromString(botId),
-                    question,
-                    history
-            );
-            log.info("answer: {}", answer);
-            return ResponseEntity.ok(answer);
-        } catch (Exception e) {
-            log.info("exception: {}", e.getMessage());
-            return ResponseEntity
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Sorry, I encountered an error. Please try again.");
-        }
+        log.info("widget ask botId={} historySize={}", botId, history == null ? 0 : history.size());
+
+        String answer = botService.askBotWithHistory(
+                UUID.fromString(botId),
+                question,
+                history
+        );
+
+        log.debug("widget answer botId={}: {}", botId, answer);
+        return ResponseEntity.ok(answer);
     }
 
     /**
@@ -80,11 +84,11 @@ public class BotController {
             @RequestPart("request") BotRequest request,
             @RequestPart(value = "files", required = false) List<MultipartFile> files
     ) throws Exception {
-        if (token == null || !authService.validateToken(token)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        UUID userId = requireUserId(token);
+        log.info("createBot user={} name={} files={}", userId, request.getName(), files == null ? 0 : files.size());
+        if (files != null && !files.isEmpty()) {
+            fileUploadValidator.validateFiles(files);
         }
-
-        UUID userId = authService.getUserFromToken(token).getId();
         BotResponse response = botService.createBot(request, userId, files);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -96,11 +100,11 @@ public class BotController {
             @RequestPart(value = "files", required = false) List<MultipartFile> files,
             @CookieValue(value = "token", required = false) String token
     ) throws Exception {
-        if (token == null || !authService.validateToken(token)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        UUID userId = requireUserId(token);
+        log.info("updateBot user={} botId={} files={}", userId, botId, files == null ? 0 : files.size());
+        if (files != null && !files.isEmpty()) {
+            fileUploadValidator.validateFiles(files);
         }
-
-        UUID userId = authService.getUserFromToken(token).getId();
         BotResponse response = botService.updateBot(botId, request, userId, files);
         return ResponseEntity.ok(response);
     }
@@ -109,11 +113,7 @@ public class BotController {
     public ResponseEntity<List<BotResponse>> getUserBots(
             @CookieValue(value = "token", required = false) String token
     ) {
-        if (token == null || !authService.validateToken(token)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        UUID userId = authService.getUserFromToken(token).getId();
+        UUID userId = requireUserId(token);
         List<BotResponse> bots = botService.getUserBots(userId);
         return ResponseEntity.ok(bots);
     }
@@ -123,11 +123,7 @@ public class BotController {
             @PathVariable UUID botId,
             @CookieValue(value = "token", required = false) String token
     ) {
-        if (token == null || !authService.validateToken(token)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        UUID userId = authService.getUserFromToken(token).getId();
+        UUID userId = requireUserId(token);
         BotResponse response = botService.getBot(botId, userId);
         return ResponseEntity.ok(response);
     }
@@ -137,11 +133,8 @@ public class BotController {
             @PathVariable UUID botId,
             @CookieValue(value = "token", required = false) String token
     ) {
-        if (token == null || !authService.validateToken(token)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        UUID userId = authService.getUserFromToken(token).getId();
+        UUID userId = requireUserId(token);
+        log.info("deleteBot user={} botId={}", userId, botId);
         botService.deleteBot(botId, userId);
         return ResponseEntity.noContent().build();
     }
@@ -152,12 +145,26 @@ public class BotController {
             @RequestBody Map<String, String> body,
             @CookieValue(value = "token", required = false) String token
     ) {
-        if (token == null || !authService.validateToken(token)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
+        requireUserId(token);
 
         String question = body.get("question");
         String answer = botService.askBot(botId, question);
         return ResponseEntity.ok(answer);
+    }
+
+    /**
+     * Resolves the caller from the auth cookie. Throws 401 rather than returning it so
+     * every endpoint shares one check: previously a valid token for a deleted user
+     * NPE'd into a 500 at getUserFromToken(token).getId().
+     */
+    private UUID requireUserId(String token) {
+        if (token == null || !authService.validateToken(token)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not authenticated");
+        }
+        var user = authService.getUserFromToken(token);
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Session no longer valid");
+        }
+        return user.getId();
     }
 }

@@ -206,8 +206,12 @@ public class BotService {
                     .getText();
 
         } catch (Exception e) {
-            log.error("Error during bot query: {}", e.getMessage(), e);
-            return "I'm sorry, I encountered an error processing your request. Please try again.";
+            // Returning a friendly string here made every failure look like a successful
+            // 200 to the caller. Rethrow: GlobalExceptionHandler logs it with an errorId
+            // and returns a 5xx, and widget.js already renders its own friendly message
+            // on !response.ok.
+            log.error("Bot query failed for bot {}", botId, e);
+            throw new RuntimeException("Bot query failed for bot " + botId, e);
         }
     }
 

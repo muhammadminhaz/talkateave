@@ -10,6 +10,8 @@
     const currentScript = document.currentScript || document.querySelector('script[data-bot-id]');
     const botId = currentScript?.getAttribute('data-bot-id');
     const apiUrl = currentScript?.getAttribute('data-api-url') || 'http://localhost:8080';
+    // The "Powered by" link is marketing, so it points at the product site, not the API host.
+    const siteUrl = currentScript?.getAttribute('data-site-url') || 'https://talkateave.vercel.app';
     const position = currentScript?.getAttribute('data-position') || 'bottom-right';
     const primaryColor = currentScript?.getAttribute('data-color') || '#3b82f6';
 
@@ -361,7 +363,7 @@
                 </div>
 
                 <div class="talkateave-powered">
-                    Powered by <a href="${apiUrl}" target="_blank">Talkateave</a>
+                    Powered by <a href="${siteUrl}" target="_blank" rel="noopener noreferrer">Talkateave</a>
                 </div>
             </div>
         `;

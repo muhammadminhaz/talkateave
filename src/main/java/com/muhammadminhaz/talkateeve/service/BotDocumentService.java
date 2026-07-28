@@ -63,12 +63,14 @@ public class BotDocumentService {
     @Transactional
     public List<BotDocument> uploadDocuments(Bot bot, List<MultipartFile> files) throws Exception {
         List<BotDocument> savedDocs = new ArrayList<>();
+        List<String> failed = new ArrayList<>();
 
         for (MultipartFile file : files) {
             // Validate file size
             if (file.getSize() > MAX_FILE_SIZE) {
-                log.warn("Skipping file {} - exceeds max size of {}MB",
+                log.warn("Rejecting file {} - exceeds max size of {}MB",
                         file.getOriginalFilename(), MAX_FILE_SIZE / 1024 / 1024);
+                failed.add(file.getOriginalFilename() + " (exceeds " + (MAX_FILE_SIZE / 1024 / 1024) + "MB)");
                 continue;
             }
 
@@ -87,15 +89,23 @@ public class BotDocumentService {
                 System.gc();
 
             } catch (OutOfMemoryError e) {
-                log.error("OUT OF MEMORY processing {}: {}", file.getOriginalFilename(), e.getMessage());
+                log.error("OUT OF MEMORY processing {}", file.getOriginalFilename(), e);
                 System.gc();
-                throw new RuntimeException("File too large - please use smaller file or increase heap size");
+                throw new RuntimeException("File too large - please use smaller file or increase heap size", e);
             } catch (Exception e) {
-                log.error("Failed to process file {}: {}", file.getOriginalFilename(), e.getMessage());
+                log.error("Failed to process file {}", file.getOriginalFilename(), e);
+                failed.add(file.getOriginalFilename());
             }
         }
 
         invalidateBotCache(bot.getId().toString());
+
+        // Previously this returned 200 with zero chunks when every file failed, which is
+        // how a dead embedding model stayed invisible for months. Fail loudly instead.
+        if (!failed.isEmpty()) {
+            throw new RuntimeException("Document upload failed for: " + String.join(", ", failed));
+        }
+
         log.info("Successfully uploaded {} document chunks for bot {}", savedDocs.size(), bot.getId());
 
         return savedDocs;
@@ -168,8 +178,8 @@ public class BotDocumentService {
                 }
 
             } catch (OutOfMemoryError e) {
-                log.error("File {} too large for Tika extraction", filename);
-                throw new RuntimeException("PDF/DOCX file too large. Please reduce file size or convert to plain text.");
+                log.error("File {} too large for Tika extraction", filename, e);
+                throw new RuntimeException("PDF/DOCX file too large. Please reduce file size or convert to plain text.", e);
             }
 
             // Split extracted text into lines and stream through chunker
@@ -246,8 +256,10 @@ public class BotDocumentService {
                     .build();
 
         } catch (Exception e) {
-            log.error("Failed to process chunk {}: {}", chunkIndex, e.getMessage());
-            return null;
+            // Returning null here is what silently dropped every chunk when the embedding
+            // model was dead. Propagate so uploadDocuments can report the file as failed.
+            log.error("Failed to process chunk {} of {}", chunkIndex, filename, e);
+            throw new RuntimeException("Failed to embed chunk " + chunkIndex + " of " + filename, e);
         }
     }
 
@@ -261,7 +273,8 @@ public class BotDocumentService {
             vectorStore.add(new ArrayList<>(batch));
             log.debug("Inserted batch of {} documents to vector store", batch.size());
         } catch (Exception e) {
-            log.error("Failed to insert vector batch: {}", e.getMessage());
+            log.error("Failed to insert vector batch of {} documents", batch.size(), e);
+            throw new RuntimeException("Vector store insert failed", e);
         } finally {
             batch.clear();
         }
@@ -364,7 +377,7 @@ public class BotDocumentService {
             vectorStore.delete(List.of(docId.toString()));
             log.info("Deleted document: {}", docId);
         } catch (Exception e) {
-            log.error("Failed to delete document {}: {}", docId, e.getMessage());
+            log.error("Failed to delete document {}", docId, e);
             throw new RuntimeException("Document deletion failed", e);
         }
     }
@@ -377,6 +390,7 @@ public class BotDocumentService {
             try {
                 return deserializeDocuments(cachedResult);
             } catch (JsonProcessingException e) {
+                log.warn("Corrupt cache entry {}, evicting and re-querying", cacheKey, e);
                 redisTemplate.delete(cacheKey);
             }
         }
@@ -392,7 +406,7 @@ public class BotDocumentService {
         try {
             redisTemplate.opsForValue().set(cacheKey, serializeDocuments(results), CACHE_TTL);
         } catch (JsonProcessingException e) {
-            log.error("Failed to cache query results: {}", e.getMessage());
+            log.error("Failed to cache query results for key {}", cacheKey, e);
         }
 
         return results;
@@ -420,6 +434,7 @@ public class BotDocumentService {
             }
             return CACHE_PREFIX + botId + ":" + sb + ":" + topK;
         } catch (Exception e) {
+            log.warn("SHA-256 unavailable, falling back to hashCode for cache key", e);
             return CACHE_PREFIX + botId + ":" + query.hashCode() + ":" + topK;
         }
     }
