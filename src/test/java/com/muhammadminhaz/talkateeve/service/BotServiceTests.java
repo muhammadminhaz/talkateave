@@ -46,6 +46,8 @@ class BotServiceTests {
     private JdbcTemplate jdbcTemplate;
     @Mock
     private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
+    @Mock
+    private com.muhammadminhaz.talkateeve.repository.BotQueryRepository botQueryRepository;
 
     private BotService botService;
 
@@ -55,7 +57,7 @@ class BotServiceTests {
     @BeforeEach
     void setUp() {
         botService = new BotService(chatModel, botRepository, userRepository,
-                botDocumentService, jdbcTemplate, namedParameterJdbcTemplate);
+                botDocumentService, jdbcTemplate, namedParameterJdbcTemplate, botQueryRepository);
 
         owner = new User();
         owner.setId(UUID.randomUUID());

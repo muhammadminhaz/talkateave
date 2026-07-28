@@ -239,6 +239,29 @@ class BotControllerTests {
     }
 
     @Test
+    void stats_returns401_whenNoToken() throws Exception {
+        mockMvc.perform(get("/api/bots/stats"))
+                .andExpect(status().isUnauthorized());
+        verify(botService, never()).getDashboardStats(any(), anyInt());
+    }
+
+    @Test
+    void stats_returnsRealNumbers_whenAuthenticated() throws Exception {
+        // /api/bots/stats must win over /api/bots/{botId}, or "stats" reaches UUID.fromString.
+        authenticated();
+        when(botService.getDashboardStats(owner.getId(), 7)).thenReturn(
+                new com.muhammadminhaz.talkateeve.dto.DashboardStatsResponse(
+                        2, 42L, 3L, List.of("2026-07-28", "2026-07-29"),
+                        List.of(new com.muhammadminhaz.talkateeve.dto.DashboardStatsResponse.BotSeries(
+                                botId.toString(), "Support Bot", List.of(1L, 5L)))));
+
+        mockMvc.perform(get("/api/bots/stats").cookie(new Cookie("token", "good")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalInteractions").value(42))
+                .andExpect(jsonPath("$.series[0].data[1]").value(5));
+    }
+
+    @Test
     void unknownUrl_returns404NotA500() throws Exception {
         // The catch-all handler used to log a full ERROR stack trace and return 500 for
         // every unknown path, which buries the failures the logging work exists to expose.

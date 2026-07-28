@@ -2,6 +2,7 @@ package com.muhammadminhaz.talkateeve.controller;
 
 import com.muhammadminhaz.talkateeve.dto.BotRequest;
 import com.muhammadminhaz.talkateeve.dto.BotResponse;
+import com.muhammadminhaz.talkateeve.dto.DashboardStatsResponse;
 import com.muhammadminhaz.talkateeve.dto.ChatMessageDTO;
 import com.muhammadminhaz.talkateeve.dto.ChatRequestDTO;
 import com.muhammadminhaz.talkateeve.service.AuthService;
@@ -107,6 +108,16 @@ public class BotController {
         }
         BotResponse response = botService.updateBot(botId, request, userId, files);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<DashboardStatsResponse> getDashboardStats(
+            @CookieValue(value = "token", required = false) String token,
+            @RequestParam(defaultValue = "7") int days
+    ) {
+        UUID userId = requireUserId(token);
+        int window = Math.min(Math.max(days, 1), 90);
+        return ResponseEntity.ok(botService.getDashboardStats(userId, window));
     }
 
     @GetMapping

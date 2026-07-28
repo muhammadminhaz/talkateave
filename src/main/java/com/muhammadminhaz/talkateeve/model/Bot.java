@@ -26,7 +26,8 @@ public class Bot {
     // Instructions stored as ElementCollection
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "bot_instructions", joinColumns = @JoinColumn(name = "bot_id"))
-    @Column(name = "instruction")
+    // A textarea lets users write full paragraphs; the default varchar(255) truncated them.
+    @Column(name = "instruction", length = 2000)
     private List<String> instructions = new ArrayList<>();
 
     @ManyToOne

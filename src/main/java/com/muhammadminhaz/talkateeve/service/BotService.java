@@ -3,8 +3,11 @@ package com.muhammadminhaz.talkateeve.service;
 import com.muhammadminhaz.talkateeve.dto.BotRequest;
 import com.muhammadminhaz.talkateeve.dto.BotResponse;
 import com.muhammadminhaz.talkateeve.dto.ChatMessageDTO;
+import com.muhammadminhaz.talkateeve.dto.DashboardStatsResponse;
 import com.muhammadminhaz.talkateeve.model.Bot;
+import com.muhammadminhaz.talkateeve.model.BotQuery;
 import com.muhammadminhaz.talkateeve.model.User;
+import com.muhammadminhaz.talkateeve.repository.BotQueryRepository;
 import com.muhammadminhaz.talkateeve.repository.BotRepository;
 import com.muhammadminhaz.talkateeve.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +19,9 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -29,18 +35,21 @@ public class BotService {
     private final BotDocumentService botDocumentService;
     private final JdbcTemplate jdbcTemplate;
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
+    private final BotQueryRepository botQueryRepository;
 
     public BotService(GoogleGenAiChatModel chatModel,
                       BotRepository botRepository,
                       UserRepository userRepository,
                       BotDocumentService botDocumentService,
-                      JdbcTemplate jdbcTemplate, NamedParameterJdbcTemplate namedParameterJdbcTemplate) {
+                      JdbcTemplate jdbcTemplate, NamedParameterJdbcTemplate namedParameterJdbcTemplate,
+                      BotQueryRepository botQueryRepository) {
         this.chatModel = chatModel;
         this.botRepository = botRepository;
         this.userRepository = userRepository;
         this.botDocumentService = botDocumentService;
         this.jdbcTemplate = jdbcTemplate;
         this.namedParameterJdbcTemplate = namedParameterJdbcTemplate;
+        this.botQueryRepository = botQueryRepository;
     }
 
     /**
@@ -200,10 +209,13 @@ public class BotService {
                     question
             );
 
-            return chatModel.call(new Prompt(prompt))
+            String answer = chatModel.call(new Prompt(prompt))
                     .getResult()
                     .getOutput()
                     .getText();
+
+            recordQuery(botId);
+            return answer;
 
         } catch (Exception e) {
             // Returning a friendly string here made every failure look like a successful
@@ -268,6 +280,63 @@ public class BotService {
 
         // Invalidate cache
         botDocumentService.invalidateBotCache(botId.toString());
+    }
+
+    /**
+     * Counts one answered question. Best effort on purpose: a dashboard metric must
+     * never be the reason a user's chat request fails.
+     */
+    private void recordQuery(UUID botId) {
+        try {
+            botQueryRepository.save(new BotQuery(botId));
+        } catch (Exception e) {
+            log.warn("Could not record query for bot {}", botId, e);
+        }
+    }
+
+    /**
+     * Real numbers for the dashboard Overview, which used to be hardcoded.
+     */
+    public DashboardStatsResponse getDashboardStats(UUID userId, int days) {
+        List<Bot> bots = botRepository.findByUserId(userId);
+        List<String> dayLabels = new ArrayList<>();
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        for (int i = days - 1; i >= 0; i--) {
+            dayLabels.add(today.minusDays(i).toString());
+        }
+
+        if (bots.isEmpty()) {
+            return new DashboardStatsResponse(0, 0, 0, dayLabels, List.of());
+        }
+
+        List<UUID> botIds = bots.stream().map(Bot::getId).toList();
+        long totalInteractions = botQueryRepository.countByBotIdIn(botIds);
+
+        Long documents = namedParameterJdbcTemplate.queryForObject(
+                "SELECT COUNT(DISTINCT filename) FROM bot_document WHERE CAST(bot_id AS text) IN (:ids)",
+                new MapSqlParameterSource("ids", botIds.stream().map(UUID::toString).toList()),
+                Long.class);
+
+        Instant since = today.minusDays(days - 1L).atStartOfDay(ZoneOffset.UTC).toInstant();
+        Map<UUID, Map<String, Long>> byBot = new HashMap<>();
+        for (Object[] row : botQueryRepository.countDailyByBot(botIds, since)) {
+            byBot.computeIfAbsent((UUID) row[0], k -> new HashMap<>())
+                    .put(row[1].toString(), ((Number) row[2]).longValue());
+        }
+
+        List<DashboardStatsResponse.BotSeries> series = bots.stream()
+                .map(bot -> {
+                    Map<String, Long> counts = byBot.getOrDefault(bot.getId(), Map.of());
+                    List<Long> data = dayLabels.stream()
+                            .map(day -> counts.getOrDefault(day, 0L))
+                            .toList();
+                    return new DashboardStatsResponse.BotSeries(
+                            bot.getId().toString(), bot.getName(), data);
+                })
+                .toList();
+
+        return new DashboardStatsResponse(bots.size(), totalInteractions,
+                documents == null ? 0 : documents, dayLabels, series);
     }
 
     private String generateSlug(String name) {
