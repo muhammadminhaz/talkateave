@@ -199,9 +199,19 @@ public class BotService {
                 %s
                 
                 Current question: %s
-                
-                Provide a helpful, contextual answer based on the conversation history and knowledge base.
-                If the answer isn't in the knowledge base, say so politely.
+
+                Answer from the conversation history and knowledge base. If the answer isn't there, say so politely.
+
+                Style: you are talking in a chat window, not writing a report.
+                - Match the length to the question. A simple question gets a sentence or two, a question that
+                  genuinely needs detail gets as much room as it needs. Never pad to sound thorough.
+                - Do not dump everything you know. Answer only what was asked and let the user ask for more.
+                - Write plain text only. No markdown: no **bold**, no *italics*, no backticks, no #headings,
+                  no bullet or numbered lists, no emoji. Just sentences, the way a person types in a chat.
+                - Only use a list if the user explicitly asks for one or for step-by-step instructions,
+                  and even then keep it plain, one short item per line.
+                - Do not summarize the whole knowledge base or restate the document back to the user.
+                - Do not end with a menu of things you could do. At most one short natural follow-up question.
                 """,
                     instructions,
                     conversationContext.toString(),
