@@ -200,7 +200,9 @@ public class BotService {
                 
                 Current question: %s
 
-                Answer from the conversation history and knowledge base. If the answer isn't there, say so politely.
+                If this is a greeting, thanks, or other small talk, just answer it like a person would, briefly and
+                warmly. Do not consult the knowledge base or pitch what you can do for it. Otherwise answer from the
+                conversation history and knowledge base, and if the answer isn't there, say so politely.
 
                 Style: you are talking in a chat window, not writing a report.
                 - Match the length to the question. A simple question gets a sentence or two, a question that
