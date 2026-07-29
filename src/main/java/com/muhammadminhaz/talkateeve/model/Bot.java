@@ -21,6 +21,7 @@ public class Bot {
 
     private String name;
     private String description;
+    @Column(unique = true)
     private String slug;
 
     // Instructions stored as ElementCollection
